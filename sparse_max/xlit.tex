@@ -1,0 +1,121 @@
+%
+% File acl2013.tex
+%
+% Contact  navigli@di.uniroma1.it
+%%
+%% Based on the style files for ACL-2012, which were, in turn,
+%% based on the style files for ACL-2011, which were, in turn, 
+%% based on the style files for ACL-2010, which were, in turn, 
+%% based on the style files for ACL-IJCNLP-2009, which were, in turn,
+%% based on the style files for EACL-2009 and IJCNLP-2008...
+
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt]{article}
+\usepackage{acl2012-onecolumn}
+\usepackage{times}
+\usepackage{url}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{color}
+%\setlength\titlebox{6.5cm}    % You can expand the title box if you
+% really have to
+
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{tikz-qtree}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{shapes.arrows}
+\usetikzlibrary{patterns}
+\usetikzlibrary{chains}
+\usetikzlibrary{calc}
+
+% This says ``don't create a float page unless you can make it at least 80% full'' (default is 0.7).
+% http://tex.stackexchange.com/questions/39017/how-to-influence-the-position-of-float-environments-like-figure-and-table-in-lat
+% (Are we breaking the rules by doing this? (Will anyone notice if all we submit is the pdf?))
+\renewcommand{\floatpagefraction}{0.8}
+
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\feature}[1]{\ensuremath{\texttt{#1}}}
+\newcommand{\pf}[1]{\ensuremath{\textsl{#1}}}
+\newcommand{\catstring}[2]{\ensuremath{\pf{#1}\mathbin{:}\feature{#2}}}
+\newcommand{\tuple}[2][{}]{\ensuremath{\langle #2 \rangle_{#1}}}
+\newcommand{\setcomp}[2]{\ensuremath{\{ #1 \mathrel{|} #2 \}}}
+\newcommand{\grammaticalop}[1]{\ensuremath{\textsc{#1}}}
+\newcommand{\lexical}{\ensuremath{1}}
+\newcommand{\nonlexical}{\ensuremath{0}}
+
+\newcommand{\mcfgrhs}[0]{\ensuremath{\delta}}
+\newcommand{\mcfglhs}[0]{\ensuremath{N}}
+\newcommand{\mcfgrule}[0]{\ensuremath{N \Rightarrow \mcfgrhs}}
+
+\newcommand{\ensuretext}[1]{#1}
+%\newcommand{\mycomment}[3]{}
+\newcommand{\ignore}[1]{}
+\newcommand{\mycomment}[3]{\ensuretext{\textcolor{#3}{[#1 #2]}}}
+\newcommand{\cjdmarker}{\ensuretext{\textcolor{blue}{\ensuremath{^{\textsc{C}}_{\textsc{D}}}}}}
+\newcommand{\cjd}[1]{\mycomment{\cjdmarker}{#1}{blue}}
+\newcommand{\thmarker}{\ensuretext{\textcolor{red}{\ensuremath{^{\textsc{T}}_{\textsc{H}}}}}}
+\newcommand{\thcomment}[1]{\mycomment{\thmarker}{#1}{red}}
+\newenvironment{itemizesquish}{\begin{list}{\setcounter{enumi}{0}\labelitemi}{\setlength{\itemsep}{-0.25em}\setlength{\labelwidth}{0.5em}\setlength{\leftmargin}{\labelwidth}\addtolength{\leftmargin}{\labelsep}}}{\end{list}}
+
+\newcommand{\secref}[1]{Section~\ref{#1}}
+\newcommand{\Secref}[1]{Section~\ref{#1}}   % specialised for start of sentence
+\newcommand{\figref}[1]{Fig.~\ref{#1}}
+
+% I never know what to call these.
+\newsavebox{\one}
+\newsavebox{\two}
+\newsavebox{\three}
+\newsavebox{\four}
+\newsavebox{\five}
+
+\title{Notes on Transliteration}
+
+\author{Chris Dyer \\
+  School of Computer Science \\
+  Carnegie Mellon University \\
+  5000 Forbes Ave., Pittsburgh, PA, 15213 \\
+  {\tt cdyer@cs.cmu.edu} \\}
+ 
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+\end{abstract}
+
+\section{Introduction}
+Consider how a word in English $\boldsymbol{x}=(x_1,x_2,\ldots,x_n)$ translates into a word in another language whose words are written in an alphabetic (or abjad) script $\boldsymbol{y}=(y_1,y_2,\ldots,y_m)$. We wish to distinguish two processes: translation and transliteration. Translation refers to an opaque relationship between $\boldsymbol{x}$ and $\boldsymbol{y}$ (e.g., Arabic \emph{syArp} and English \emph{car}), whereas transliteration refers to either a regular transformation across scripts (e.g., Arabic \emph{Alsysy} and English \emph{El-Sisi}).
+
+Let us assume we have a set of pairs $\{(\boldsymbol{x}_i, \boldsymbol{y}_i)\}_{i=1}^N$ known to be translations. We would like to infer whether each is a transliteration. To do so, we introduce a Bernoulli random variable $z_i$ for each which indicates whether $\boldsymbol{y}_i$ was generated from an $n$-gram character model or whether $\boldsymbol{y}_i$ was generated using a transliteration model conditioning on $\boldsymbol{x}_i$. Where does the parameter $b$ for the Bernoulli distribution come from? Our intuition is that whether a word transliterates or translates is largely determined by features of the word. That is, does it ``look like" a name? This is a simplifying assumption. Common words can be both common nouns that translate and also names that transliterate, e.g., the Arabic name  \emph{Hsn} (English \emph{Hasan}) can serve as a common adjective meaning \emph{handsome}. Thus $b$ should reflect how likely a word is to be transliterated; it will not always have values strongly near 1 or 0.
+
+TO make our model precise, we assume the $\boldsymbol{y}_i$'s are generated conditionally on the $\boldsymbol{x}_i$'s according to the following process:
+\begin{align*}
+b = &\,\sigma(\mathbf{Wf}(\boldsymbol{x}) + a), \ \ \sigma\textrm{ is the logistic sigmoid} \\
+z_i \mid \; &\boldsymbol{x}_i \sim \mathrm{Bernoulli}(b) \\
+\textrm{if }z_i&=0\textrm{ then} \\
+&\boldsymbol{y}_i \sim \mathrm{Ngram}(\boldsymbol{\theta}) \\
+\textrm{else}& \\
+&\boldsymbol{y}_i \sim \mathrm{HMMTrans}(\boldsymbol{x}_i,\boldsymbol{\varphi}) \\
+\end{align*}
+Thus, assuming we have parameters $\mathbf{W}$, $\mathbf{f}$, $a$, $\boldsymbol{\theta}$, and $\boldsymbol{\varphi}$, we can write the conditional distribution over $z$ and $\boldsymbol{y}$ for a given $\boldsymbol{x}$:
+\begin{align*}
+b &=\sigma(\mathbf{Wf}(\boldsymbol{x}) + a)\\
+p(\boldsymbol{y},z \mid \boldsymbol{x}; \boldsymbol{\Theta}) &= \begin{cases} b \times p(\boldsymbol{y} \mid \boldsymbol{x} ; \boldsymbol{\varphi}) & \textrm{if $z=0$}\\
+(1-b) \times p(\boldsymbol{y}; \boldsymbol{\theta}) & \textrm{if $z=1$}
+\end{cases}\\
+p(z \mid \boldsymbol{x},\boldsymbol{y}; \boldsymbol{\Theta}) &= \frac{p(\boldsymbol{y},z \mid \boldsymbol{x}; \boldsymbol{\Theta})}{\sum_{z'\in \{0,1\}}p(\boldsymbol{y},z' \mid \boldsymbol{x}; \boldsymbol{\Theta})}
+\end{align*}
+
+TODO: Talk about learning in two languages. Then, what about more languages? English is translated into many other languages in Wikipedia- we will learn a very good model for what kinds of English words transliterate by letting $b(\boldsymbol{x})$ when $\boldsymbol{x}$ is in English be shared across many target languages.
+
+\bibliographystyle{acl}
+\bibliography{biblio}
+
+\end{document}
+

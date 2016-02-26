@@ -1,0 +1,145 @@
+%
+% File acl2013.tex
+%
+% Contact  navigli@di.uniroma1.it
+%%
+%% Based on the style files for ACL-2012, which were, in turn,
+%% based on the style files for ACL-2011, which were, in turn, 
+%% based on the style files for ACL-2010, which were, in turn, 
+%% based on the style files for ACL-IJCNLP-2009, which were, in turn,
+%% based on the style files for EACL-2009 and IJCNLP-2008...
+
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt]{article}
+\usepackage{acl2012-onecolumn}
+\usepackage{times}
+\usepackage{url}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{color}
+%\setlength\titlebox{6.5cm}    % You can expand the title box if you
+% really have to
+
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{tikz-qtree}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{shapes.arrows}
+\usetikzlibrary{patterns}
+\usetikzlibrary{chains}
+\usetikzlibrary{calc}
+
+% This says ``don't create a float page unless you can make it at least 80% full'' (default is 0.7).
+% http://tex.stackexchange.com/questions/39017/how-to-influence-the-position-of-float-environments-like-figure-and-table-in-lat
+% (Are we breaking the rules by doing this? (Will anyone notice if all we submit is the pdf?))
+\renewcommand{\floatpagefraction}{0.8}
+
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\feature}[1]{\ensuremath{\texttt{#1}}}
+\newcommand{\pf}[1]{\ensuremath{\textsl{#1}}}
+\newcommand{\catstring}[2]{\ensuremath{\pf{#1}\mathbin{:}\feature{#2}}}
+\newcommand{\tuple}[2][{}]{\ensuremath{\langle #2 \rangle_{#1}}}
+\newcommand{\setcomp}[2]{\ensuremath{\{ #1 \mathrel{|} #2 \}}}
+\newcommand{\grammaticalop}[1]{\ensuremath{\textsc{#1}}}
+\newcommand{\lexical}{\ensuremath{1}}
+\newcommand{\nonlexical}{\ensuremath{0}}
+
+\newcommand{\mcfgrhs}[0]{\ensuremath{\delta}}
+\newcommand{\mcfglhs}[0]{\ensuremath{N}}
+\newcommand{\mcfgrule}[0]{\ensuremath{N \Rightarrow \mcfgrhs}}
+
+\newcommand{\ensuretext}[1]{#1}
+%\newcommand{\mycomment}[3]{}
+\newcommand{\ignore}[1]{}
+\newcommand{\mycomment}[3]{\ensuretext{\textcolor{#3}{[#1 #2]}}}
+\newcommand{\cjdmarker}{\ensuretext{\textcolor{blue}{\ensuremath{^{\textsc{C}}_{\textsc{D}}}}}}
+\newcommand{\cjd}[1]{\mycomment{\cjdmarker}{#1}{blue}}
+\newcommand{\thmarker}{\ensuretext{\textcolor{red}{\ensuremath{^{\textsc{T}}_{\textsc{H}}}}}}
+\newcommand{\thcomment}[1]{\mycomment{\thmarker}{#1}{red}}
+\newenvironment{itemizesquish}{\begin{list}{\setcounter{enumi}{0}\labelitemi}{\setlength{\itemsep}{-0.25em}\setlength{\labelwidth}{0.5em}\setlength{\leftmargin}{\labelwidth}\addtolength{\leftmargin}{\labelsep}}}{\end{list}}
+
+\newcommand{\secref}[1]{Section~\ref{#1}}
+\newcommand{\Secref}[1]{Section~\ref{#1}}   % specialised for start of sentence
+\newcommand{\figref}[1]{Fig.~\ref{#1}}
+
+% I never know what to call these.
+\newsavebox{\one}
+\newsavebox{\two}
+\newsavebox{\three}
+\newsavebox{\four}
+\newsavebox{\five}
+
+\title{Notes on Sparsemax}
+
+\author{Lingpeng Kong \\
+  School of Computer Science \\
+  Carnegie Mellon University \\
+  5000 Forbes Ave., Pittsburgh, PA, 15213 \\
+  {\tt lingpenk@cs.cmu.edu} \\}
+ 
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+\textit{Sparsemax} is an alternative to the \textit{softmax} function. It encourages the output distribution to be sparse. In the notes, we summarize the ideas in~\cite{martins2016from}. We first present the form of \textit{softmax} and its corresponding loss function during training. Then, we discuss the form of \textit{sparsemax}, the reason why it promotes sparsity and how to derive its corresponding loss function.
+\end{abstract}
+
+\section{Softmax}
+We use the \textit{softmax} function (a.k.a. \textit{normalized exponential}) when we want to ``squashes'' a set of scores $\boldsymbol{z} = \{z_1, z_2, \ldots, z_n\}, \boldsymbol{z} \in \mathbb{R}^N$ into a probability distribution $\boldsymbol{p} = \{p_1, p_2, \ldots, p_n\}$ where we have two properties -- (1) if $z_i > z_j$, then $p_i > p_j$ and (2) $\sum_i{p_i} = 1$, which guarantees a valid probability distribution. Component-wisely, we have
+\begin{align}
+p_i = \frac{\exp{z_i}}{\sum_j\exp{z_j}}\label{eq:sm}
+\end{align}
+In a multi-class classification problem, where we are given a training point $(\boldsymbol{x}^{(i)}, y^{(i)})$, where $\boldsymbol{x}^{(i)}$ is the \textit{feature vector} and $y^{(i)}$ is the positive integer index for the class. During training, the loss function associated with \textit{softmax} is what we usually call \textit{neglogsoftmax} (i.e. negative log-likelihood or logistic loss), defined as follows:
+\begin{align}
+L(\boldsymbol{x}^{(i)}, y^{(i)}) = L_{\text{softmax}}(\boldsymbol{z}; k) & = -\log \text{softmax}_{k}(\boldsymbol{z}) = -z_k + \log\sum_j\exp{z_j}\label{eq:lsm}
+\end{align}
+where $\boldsymbol{z} = \boldsymbol{f}(\boldsymbol{x}^{(i)})$ is the score vector ($z_i$ is the score for class $i$) and $k = y^{(i)}$ is the \textit{gold} class index. The total loss of the training set is the sum of all the loss of the points in the set.\\
+
+Note here we introduce two different things, the \textit{softmax} funtion (i.e. $\text{softmax}(\boldsymbol{z})$) and the \textit{softmax loss} (i.e. $L_{\text{softmax}(\boldsymbol{z}; k)}$). During training, we need to compute $\nabla_{\boldsymbol{z}}L_{\text{softmax}(\boldsymbol{z}; k)}$ as follows:
+\begin{align}
+\nabla_{\boldsymbol{z}}L_{\text{softmax}}(\boldsymbol{z}; k) = - \boldsymbol{\delta}_k + \text{softmax}(\boldsymbol{z})\label{eq:glsm}
+\end{align}
+$\boldsymbol{\delta}_k$ denotes the delta distribution on $k$, $[{\delta}_k]_j = 1$ if $j = k$, and $0$ otherwise.
+\section{Sparsemax}
+Although \textit{softmax} is appealing in many different ways, it is not \textit{sparse}, which is an ideal \textit{bias} we want the model to have when solving a lot of problems. The meaning of the word \textit{sparse} here is similar as it is used in the context of \textit{L1-regularization}~\cite{tibshirani1996regression}. Basically, we want the solution $\boldsymbol{p}$ to contain as many zeros as possible (i.e. a \textit{sparse} distribution) unless there are enough evidences in the data indict the model should assign $p_i > 0$ to class $i$. As we can see in the \textit{softmax} case (e.q.~\ref{eq:sm}), we have $p_i > 0$ for all $i$. This is not a \textit{sparse} solution at all.
+
+To promote the sparsity, \textit{sparsemax} is defined as the euclidean projection of the input vector $\boldsymbol{z}$ onto the probability simplex~\cite{martins2016from}. Essentially this means, given a point $\boldsymbol{z}$ in $\mathbb{R}^N$ space, find the point $\boldsymbol{p}$ on the simplex (which is a hyperplane in this space), where the euclidean distance from $\boldsymbol{p}$ to $\boldsymbol{z}$ is minimized. The intuition behind this can be explained in two aspects. First, projecting $\boldsymbol{z}$ into a simplex guarantee the solution to sum up to 1 (hence a valid distribution)\footnote{Using the projection to make the solution in the valid space is actually a very general idea in optimization (e.g. projected gradient descent).}. Second, because the projection usually falls on the boundary of the simplex, it promotes sparsity naturally\footnote{Think about the case when $\boldsymbol{z} \in \mathbb{R}^2$. The simplex here is a line segment between (0,1) and (1,0) in the 2-D space. In this space, only the points between the line $y = x + 1$ and $y = x - 1$ yield fractional solutions.}.
+
+Euclidean projection onto a simplex has a closed-form solution, therefore, the sparsemax function is defined as (componentwise)
+\begin{align}
+\text{sparsemax}_{i}(\boldsymbol{z}) = [z_{i} - \tau(\boldsymbol{z})]_{+}\\
+\tau(\boldsymbol{z}) = \frac{(\sum_{j \in S(\boldsymbol{z})} z_j)-1}{|S(\boldsymbol{z})|} \label{eq:spm}
+\end{align}
+where $S(\boldsymbol{z}) := \{j \in [K]~|~\text{sparsemax}_{j} (\boldsymbol{z}) > 0\}$ is the support of $\text{sparsemax}(\boldsymbol{z})$.
+
+The next problem we need to solve is to find an appropriate loss function for \textit{sparsemax}. The most straight-forward solution of this is to modify the \textit{softmax} in equation~\ref{eq:lsm} to \textit{sparsemax}.
+\begin{align}
+L(\boldsymbol{x}^{(i)}, y^{(i)}) = L_{\text{sparsemax}}(\boldsymbol{z}; k) & = -\log \text{sparsemax}_{k}(\boldsymbol{z}) \label{eq:lspmw}
+\end{align}
+Unfortunately, this is not doable, because \textit{sparsemax} assigns probability \textit{exact} zero to some of the labels. Any model that assigns zero probability to a gold label would zero out the probability of the entire training set.
+
+Therefore, the solution here is, instead of replacing the \textit{softmax} to \textit{sparsemax} in equation~\ref{eq:lsm}, do it in equation~\ref{eq:glsm}.
+\begin{align}
+\nabla_{\boldsymbol{z}}L_{\text{sparsemax}}(\boldsymbol{z}; k) = - \boldsymbol{\delta}_k + \text{sparsemax}(\boldsymbol{z})\label{eq:glspm}
+\end{align}
+
+From equation~\ref{eq:glspm}, we can compute that there exists a function $L_{\text{sparsemax}}$, whose differentiation follows this form. The function is
+\begin{align}
+L_{\text{sparsemax}}(\boldsymbol{z}; k) = -z_{k} + \frac{1}{2}\sum_{j \in S(\boldsymbol{z})}(z_{j}^2 - \tau^2(\boldsymbol{z})) + \frac{1}{2}
+\end{align}
+$S(\boldsymbol{z})$ and $\tau$ are defined as in equation~\ref{eq:spm}. That is the loss function associated with \textit{sparsemax} we are looking for.
+
+\section{Discussion}
+For the gradient computation and implementation details, please refers to the paper and an implementation of this at \url{https://github.com/clab/cnn}.
+
+\bibliographystyle{acl}
+\bibliography{biblio}
+
+\end{document}
+
