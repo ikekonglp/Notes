@@ -10,6 +10,7 @@ To train a model using segmental RNNs, you need to specify the following things:
 --upe, (optional), you can specify the pre-trained word embeding you want to use 
                   (simply don't use this if you don't want to use pre-trained embeddings)
 ```
+(see more explainations of different parameters in https://github.com/clab/cnn/blob/master/examples/segrnn-sup.cc#L1019)
 
 e.g.
 
