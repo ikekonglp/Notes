@@ -15,11 +15,11 @@ e.g.
 
 ```
 examples/segrnn-sup --train --evaluate_test \
-                    --train_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/$1_train \
-                    --dev_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/$1_dev \
-                    --test_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/$1_test \
+                    --train_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/train \
+                    --dev_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/dev \
+                    --test_file /usr1/home/lingpenk/data_scripts/data/icwb2-data/processed/test \
                     --upe /usr1/home/lingpenk/data_scripts/data/embeding/vec-cwin.txt \
-                    --model_file_prefix $1_model > context_final_$1_$2_stdout_adam 2> context_final_$1_$2_stderr_adam
+                    --model_file_prefix model > stdout_log 2> stderr_log
 ```
 
 The input file format (for train/dev/test) will be, one sentence per line:
